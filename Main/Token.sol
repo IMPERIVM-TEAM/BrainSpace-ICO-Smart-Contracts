@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
 import "github.com/OpenZeppelin/openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "./ERC20/StandardToken.sol";
+import "../ERC20/StandardToken.sol";
 
 /**
  * @title IMPCoin

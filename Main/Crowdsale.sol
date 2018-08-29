@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
 
-import "./Extensions//Lifecycle.sol";
+import "../Extensions//Lifecycle.sol";
 
 
 //  Interface for interacting with IMPCoin contract
