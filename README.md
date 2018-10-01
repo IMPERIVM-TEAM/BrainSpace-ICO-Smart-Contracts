@@ -3,8 +3,8 @@
 Brainspace Initial coin offering is a key stage in proccess of launching world wide blockchain registry
 of intellectual property rights, patents, licenses / licensing.
 
-Special terms: \n
-  ERC20 - Ethereum Request of Comments. 20 - unique identical number of the standard.
+Special terms:
+  ERC20 - Ethereum Request of Comments. 20 - unique identical number of the standard;
   CCE - Crowdsale Contract Extension. The extension is additional functional for managing ICO.
 
 The following provides visibility into how Brainspace ICO contracts are organized:
