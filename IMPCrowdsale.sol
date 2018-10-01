@@ -1,26 +1,17 @@
 pragma solidity ^0.4.24;
 
-
-import "../Extensions//Lifecycle.sol";
-
-
-//  Interface for interacting with IMPCoin contract
-interface IMPCoin {
-    // function safeTransferFrom(address _from, address _to, uint256 _amount);
-    function transferFrom(address _from, address _to, uint256 _amount) external;
-    function decimals() external returns(uint);
-}
-
+import "./SafeMath.sol";
+import "./Lifecycle.sol";
+import "./IMPCoin.sol";
+import "./Verification.sol";
 
 /**
- * @title Smart contract for Brainspace ICO
- * 
+ * @dev Brainspace crowdsale contract
  */
-contract IMPCrowdsale is Lifecycle {
-    
+contract IMPCrowdsale is Lifecycle, Verification {
+
     using SafeMath for uint;
-    // using SafeERC20 for IMPCoin;
-    
+     
     //  Token contract for the Crowdsale
     IMPCoin public token;
     
@@ -29,8 +20,6 @@ contract IMPCrowdsale is Lifecycle {
     
     //  Total amount of sold tokens
     uint public totalSold;
-    
-    uint public hardCapMicroTokens = 1431000000000000;
     
     //  The variable is purposed for ETHUSD updating
     uint lastTimeStamp;
@@ -43,13 +32,26 @@ contract IMPCrowdsale is Lifecycle {
      */
     event TokenPurchase(
         address indexed purchaser,
-        uint256 value,
-        uint256 amount
+        uint value,
+        uint amount
     );
     
+    /**
+     * Event for token purchase logging
+     * @param rate new rate
+     */
+    event StringUpdate(string rate);
+    
+    
+    /**
+     * Event for manual token transfer
+     * @param to receiver address
+     * @param value tokens amount
+     */
+    event ManualTransfer(address indexed to, uint indexed value);
+
     constructor(
         IMPCoin _token,
-        uint _duration,
         uint _cents,
         uint _requiredDollarAmount
     )
@@ -58,12 +60,14 @@ contract IMPCrowdsale is Lifecycle {
         require(_token != address(0));
         token = _token;
         initialOwner = msg.sender;
-        setUpConditions(_duration, _cents, _requiredDollarAmount);
+        setUpConditions( _cents, _requiredDollarAmount);
         crowdsaleStage = Stages.Private;
-        updateCourse();
-        emit CrowdsaleStarted(now);
+        updateCourse(); // comment out for the tests
     }
     
+    /**
+     * @dev callback
+     */
     function () public payable {
         initialOwner.transfer(msg.value);
     }
@@ -71,14 +75,19 @@ contract IMPCrowdsale is Lifecycle {
     /**
      * @dev low level token purchase ***DO NOT OVERRIDE***
      */
-    function buyTokens() public payable {
-        require(totalSold <= hardCapMicroTokens);
+    function buyTokens()
+    public
+    payable
+    appropriateStage
+    {
+        require(approvedBuyers[msg.sender]);
+        require(totalSold <= token.totalSupply().div(100).mul(percentLimit));
 
-        uint256 weiAmount = msg.value;
+        uint weiAmount = msg.value;
         _preValidatePurchase(weiAmount);
 
         // calculate token amount to be created
-        uint256 tokens = _getTokenAmount(weiAmount);
+        uint tokens = _getTokenAmount(weiAmount);
 
         // update state
         weiRaised = weiRaised.add(weiAmount);
@@ -94,8 +103,41 @@ contract IMPCrowdsale is Lifecycle {
         _forwardFunds();
         _postValidatePurchase(tokens);
     }
-  
-    function _preValidatePurchase(uint256 _weiAmount)
+    
+    /**
+     *  @dev rate updating means 
+     */
+    function updateCourse() public payable onlyOwners {
+        updatePrice();
+        lastTimeStamp = now;
+    }
+    
+    /**
+     * @dev manual ETHUSD rate updating according to exchange data
+     * @param _rate is the rate gonna be set up
+     */
+    function stringCourse(string _rate) public payable onlyOwners {
+        stringUpdate(_rate);
+        lastTimeStamp = now;
+        emit StringUpdate(_rate);
+    }
+    
+    function manualTokenTransfer(address _to, uint _value)
+    public
+    onlyOwners
+    returns(bool success)
+    {
+        if(approvedBuyers[_to]) {
+            totalSold = totalSold.add(_value);
+            token.transferFrom(initialOwner, _to, _value);
+            emit ManualTransfer(_to, _value);
+            return true;    
+        } else {
+            return false;
+        }
+    }
+    
+    function _preValidatePurchase(uint _weiAmount)
     internal
     view
     {
@@ -119,13 +161,13 @@ contract IMPCrowdsale is Lifecycle {
      * @param _weiAmount Value in wei to be converted into tokens
      * @return Number of tokens that can be purchased with the specified _weiAmount
      */
-    function _getTokenAmount(uint256 _weiAmount)
+    function _getTokenAmount(uint _weiAmount)
     internal
     view
-    returns (uint256)
+    returns (uint)
     {
         uint centsWei = SafeMath.div(1 ether, ETHUSDC);
-        uint microTokenWeiPrice = centsWei.mul(usCentsPrice).div(10 ** token.decimals());
+        uint microTokenWeiPrice = centsWei.mul(usCentsPrice).div(10 ** uint(token.decimals()));
         uint amountTokensForInvestor = _weiAmount.div(microTokenWeiPrice);
         
         return amountTokensForInvestor;
@@ -135,7 +177,7 @@ contract IMPCrowdsale is Lifecycle {
      * @dev Source of tokens. Override this method to modify the way in which the crowdsale ultimately gets and sends its tokens.
      * @param _tokenAmount Number of tokens to be emitted
      */
-    function _deliverTokens(uint256 _tokenAmount) internal {
+    function _deliverTokens(uint _tokenAmount) internal {
         token.transferFrom(initialOwner, msg.sender, _tokenAmount);
     }
     
@@ -143,7 +185,7 @@ contract IMPCrowdsale is Lifecycle {
      * @dev Executed when a purchase has been validated and is ready to be executed. Not necessarily emits/sends tokens.
      * @param _tokenAmount Number of tokens to be purchased
      */
-    function _processPurchase(uint256 _tokenAmount) internal {
+    function _processPurchase(uint _tokenAmount) internal {
         _deliverTokens(_tokenAmount);
     }
 
@@ -154,25 +196,7 @@ contract IMPCrowdsale is Lifecycle {
         initialOwner.transfer(msg.value);
     }
     
-    function updateCourse()
-    public
-    payable
-    onlyOwners
-    {
-        if (now.sub(lastTimeStamp) >= 120) {
-            updatePrice();
-            lastTimeStamp = now;
-        }
-    }
-
-    function stringCourse(string _rate)
-    public
-    payable
-    onlyOwners
-    {
-        if (now.sub(lastTimeStamp) >= 120) {
-            stringUpdate(_rate);
-            lastTimeStamp = now;
-        }
+    function destroy() public onlyInitialOwner {
+        selfdestruct(this);
     }
 }
