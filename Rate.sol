@@ -1,14 +1,13 @@
 pragma solidity ^0.4.24;
 
 import "./SafeMath.sol";
-import "github.com/oraclize/ethereum-api/oraclizeAPI_0.5.sol";
 
 /**
  * @title Rate means
  * @dev The contract purposed for managing crowdsale financial data,
  *      such as rates, prices, limits and etc.
  */
-contract Rate is usingOraclize {
+contract Rate  {
     
     using SafeMath for uint;
     
@@ -42,14 +41,6 @@ contract Rate is usingOraclize {
     //  Event for logging oraclize queries
     event LogNewOraclizeQuery(string  description);
 
-    function __callback(bytes32 myid, string result) public {
-        if (msg.sender != oraclize_cbAddress()) revert();
-        ETHUSDC = parseInt(result, 2);
-        uint centsWei = SafeMath.div(1 ether, ETHUSDC);
-        tokenWeiPrice = usCentsPrice.mul(centsWei);
-        requiredWeiAmount = requiredDollarAmount.mul(100).mul(1 ether).div(ETHUSDC);
-        emit LogPriceUpdated(result);
-    }
 
     function ethersToTokens(uint _ethAmount)
     public
@@ -88,14 +79,6 @@ contract Rate is usingOraclize {
         return centsAmount;
     }
     
-    function updatePrice() internal {
-        if (oraclize_getPrice("URL") > address(this).balance) {
-            emit LogNewOraclizeQuery("Oraclize query was NOT sent, please add some ETH to cover for the query fee");
-        } else {
-            emit LogNewOraclizeQuery("Oraclize query was sent, standing by for the answer..");
-            oraclize_query("URL", "json(https://api.gdax.com/products/ETH-USD/ticker).price");
-        }
-    }
 
     function stringUpdate(string _rate) internal {
         ETHUSDC = getInt(_rate, 0);

@@ -2,7 +2,7 @@ pragma solidity ^0.4.24;
 
 import "./SafeMath.sol";
 import "./Lifecycle.sol";
-import "./IMPCoin.sol";
+import "./IMPERIVMCoin.sol";
 import "./Verification.sol";
 
 /**
@@ -13,7 +13,7 @@ contract IMPCrowdsale is Lifecycle, Verification {
     using SafeMath for uint;
      
     //  Token contract for the Crowdsale
-    IMPCoin public token;
+    IMPERIVMCoin public token;
     
     //  Total amount of received wei
     uint public weiRaised;
@@ -51,7 +51,7 @@ contract IMPCrowdsale is Lifecycle, Verification {
     event ManualTransfer(address indexed to, uint indexed value);
 
     constructor(
-        IMPCoin _token,
+        IMPERIVMCoin _token,
         uint _cents,
         uint _requiredDollarAmount
     )
@@ -62,7 +62,6 @@ contract IMPCrowdsale is Lifecycle, Verification {
         initialOwner = msg.sender;
         setUpConditions( _cents, _requiredDollarAmount);
         crowdsaleStage = Stages.Private;
-        updateCourse(); // comment out for the tests
     }
     
     /**
@@ -104,13 +103,6 @@ contract IMPCrowdsale is Lifecycle, Verification {
         _postValidatePurchase(tokens);
     }
     
-    /**
-     *  @dev rate updating means 
-     */
-    function updateCourse() public payable onlyOwners {
-        updatePrice();
-        lastTimeStamp = now;
-    }
     
     /**
      * @dev manual ETHUSD rate updating according to exchange data

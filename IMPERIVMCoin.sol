@@ -6,12 +6,12 @@ import "./StandardToken.sol";
 /**
  * @title IMPCoin implementation based on ERC20 standard token
  */
-contract IMPCoin is StandardToken {
+contract IMPERIVMCoin is StandardToken {
     
     using SafeMath for uint;
     
-    string public name = "IMPCoin";
-    string public symbol = "IMP";
+    string public name = "IMPERIVMCoin";
+    string public symbol = "IMPC";
     uint8 public decimals = 6;
     
     address owner;

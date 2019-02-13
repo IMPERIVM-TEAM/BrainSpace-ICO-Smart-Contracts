@@ -1,7 +1,6 @@
-# Brainspace-ICO-contracts
+# Brain Space ICO Smart Contracts
 
-Brainspace Initial coin offering is a key stage in proccess of launching world wide blockchain registry
-of intellectual property rights, patents, licenses / licensing.
+Initial coin offering is a key stage in proccess of launching world wide blockchain registry of intellectual property rights, patents, licenses / licensing.
 
 
 Special terms:
@@ -9,7 +8,7 @@ Special terms:
   CCE - Crowdsale Contract Extension. The extension is additional functional for managing ICO.
 
 
-The following provides visibility into how Brainspace ICO contracts are organized:
+The following provides visibility into how Brain Space ICO Smart Contracts are organized:
 
 1. ERC20.sol - Abstract interface of the standard token;
 
